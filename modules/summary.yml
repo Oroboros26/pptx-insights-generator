@@ -1,0 +1,28 @@
+module: summary.py
+description: Generates the executive summary by synthesising all slide insights in one GPT call.
+
+purpose: |
+  After all slides are analysed, a single final GPT call reads every slide insight
+  and produces a leadership-level narrative. This summary is used in two places:
+  the first section of the PDF report and the body of the email.
+
+exports:
+  - name: generate_executive_summary(client, slide_results)
+    input: AzureOpenAI client, list of slide result dicts from process_pptx
+    output: formatted string with sections Overall / Key Highlights / Risks / Priorities
+    description: |
+      Filters out no-data slides, concatenates all remaining insights,
+      and asks GPT to synthesise them into a structured exec summary.
+      Returns plain text — no emojis, no markdown.
+
+dependencies:
+  internal:
+    - config.py  (MODEL)
+  external: []
+  env_vars: []
+
+notes: |
+  This is the only GPT call that reads across multiple slides.
+  All per-slide calls in slides.py are kept independent by design.
+  The output format (Overall / Key Highlights / Risks / Priorities) is
+  parsed by _parse_exec_summary() in utils.py to render the PDF and email.

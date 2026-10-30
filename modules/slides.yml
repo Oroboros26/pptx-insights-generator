@@ -1,0 +1,42 @@
+module: slides.py
+description: Extracts slide images, calls GPT-vision for analysis, and writes insights back to PPTX.
+
+purpose: |
+  Handles everything that touches a single slide: pulling out the embedded image,
+  sending it to the AI, and saving the result into the speaker notes field.
+  Each slide is treated as fully independent — no state is shared between slides.
+
+exports:
+  - name: extract_slide_image(slide)
+    input: python-pptx Slide object
+    output: base64-encoded PNG string, or None if no image found
+    description: |
+      Finds the embedded picture shape (shape_type == 13) on a slide,
+      converts it to PNG in memory, and returns it as a base64 string
+      ready to be sent to the GPT vision API.
+
+  - name: analyze_slide(client, b64_image, slide_num, system_prompt)
+    input: AzureOpenAI client, base64 image string, slide number, system prompt string
+    output: raw insight text string from the model
+    description: |
+      Sends the slide image + SLIDE_PROMPT to GPT-vision and returns the
+      structured insight text. Uses temperature=0.2 for consistent output.
+
+  - name: write_notes(slide, insight)
+    input: python-pptx Slide object, insight text string
+    output: none (modifies slide in place)
+    description: Clears the slide's speaker notes and writes the AI insight text into it.
+
+dependencies:
+  internal:
+    - config.py  (MODEL, SLIDE_PROMPT)
+  external:
+    - Pillow     (PIL Image)
+    - base64     (stdlib)
+    - io         (stdlib)
+  env_vars: []
+
+notes: |
+  If a slide has no embedded image (cover slides, section headers), extract_slide_image
+  returns None and the pipeline writes "No image found" into that slide's notes.
+  The SLIDE_PROMPT in config.py defines the exact output format the model must follow.

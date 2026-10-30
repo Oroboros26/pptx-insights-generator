@@ -1,0 +1,37 @@
+module: utils.py
+description: Shared text-processing helpers used by pdf_report.py and email_report.py.
+
+purpose: |
+  Centralises all parsing, cleaning, and number-formatting logic so it is not
+  duplicated between the PDF and email modules. Both modules import from here.
+
+exports:
+  - name: _clean(text)
+    description: Strips colour emoji that Inter fonts cannot render.
+
+  - name: _abbrev_numbers(text)
+    description: Converts raw integers to short form — 1,982,445 → 1.98m, 165,000 → 165k.
+
+  - name: _strip_slide_header(insight, slide_num)
+    description: Removes the "Slide N" header line the model sometimes adds.
+
+  - name: _parse_exec_summary(text)
+    description: |
+      Parses the executive summary string into a dict with keys:
+      overall, highlights_pos, highlights_neg, risks, priorities, watch.
+      Used by both generate_pdf_report and _email_html.
+
+  - name: _parse_slide_insight(text, slide_num)
+    description: |
+      Parses a single slide insight string into a dict with keys:
+      situation, obs_pos, obs_neg, watch, action.
+      Used by generate_pdf_report to build per-slide PDF cards.
+
+dependencies:
+  internal: []
+  external: []
+  env_vars: []
+
+notes: |
+  The emoji markers in SLIDE_PROMPT (📍 📊 ▲ ▼ ⚠️ 🎯) are the parsing anchors.
+  If SLIDE_PROMPT in config.py changes its output format, update the parsers here too.

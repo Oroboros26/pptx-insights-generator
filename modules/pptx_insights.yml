@@ -1,0 +1,50 @@
+module: pptx_insights.py
+description: Entry point and main orchestrator — the only file you run directly.
+
+purpose: |
+  Ties all modules together into a single end-to-end pipeline.
+  Intentionally contains no logic of its own — it calls functions from
+  context, slides, evaluation, summary, pdf_report, and email_report in order.
+  Keeping this file slim means the full pipeline flow is visible at a glance.
+
+usage:
+  python pptx_insights.py --input input/FILE.pptx --output output/FILE.pptx
+
+pipeline_order:
+  1. load_context()                context.py    — load all context/*.md files
+  2. build_system_prompt()         context.py    — assemble the GPT system prompt
+  3. Per slide loop:
+       extract_slide_image()       slides.py     — pull embedded PNG
+       analyze_slide()             slides.py     — GPT-vision insight
+       validate_insight()          evaluation.py — Level 2 rule checks
+       judge_insight()             evaluation.py — Level 3 AI judge (conditional)
+       write_notes()               slides.py     — save to PPTX speaker notes
+  5. print_quality_report()        evaluation.py — print L2/L3 summary
+  6. generate_executive_summary()  summary.py    — leadership narrative
+  7. generate_pdf_report()         pdf_report.py — branded A4 PDF
+  8. send_report_email()           email_report.py — email with attachments
+
+dependencies:
+  internal:
+    - config.py        (SAMPLE_RATE)
+    - context.py       (load_context, build_system_prompt)
+    - slides.py        (extract_slide_image, analyze_slide, write_notes)
+    - evaluation.py    (validate_insight, judge_insight, print_quality_report)
+    - summary.py       (generate_executive_summary)
+    - pdf_report.py    (generate_pdf_report)
+    - email_report.py  (send_report_email)
+  external:
+    - python-pptx   (Presentation)
+    - openai        (AzureOpenAI)
+    - python-dotenv (load_dotenv)
+    - argparse      (stdlib)
+    - os            (stdlib)
+    - random        (stdlib)
+  env_vars:
+    - AZURE_OPENAI_KEY: Azure OpenAI API key
+    - AZURE_OPENAI_ENDPOINT: Azure OpenAI endpoint URL
+
+notes: |
+  The AzureOpenAI client is created once here and passed into every function
+  that needs it — so all modules are stateless and testable independently.
+  All secrets are loaded from .env via python-dotenv before any imports that use them.

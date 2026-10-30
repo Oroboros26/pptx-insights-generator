@@ -1,0 +1,29 @@
+module: context.py
+description: Builds the AI system prompt from markdown context files.
+
+purpose: |
+  Analysts update business rules by editing context/*.md files — no code change needed.
+  This module assembles all context files into the single system prompt passed to GPT on every slide call.
+
+exports:
+  - name: load_context(context_dir)
+    description: |
+      Reads all *.md files in context/ sorted by filename and concatenates them.
+      Numeric prefixes (01_, 02_) control the order sections appear in the prompt.
+
+  - name: build_system_prompt(context)
+    description: |
+      Wraps the loaded context string in a role definition and 11 non-negotiable rules.
+      Returns the final string sent as the system message on every GPT call.
+
+dependencies:
+  internal:
+    - config.py
+  external:
+    - os         (stdlib)
+  env_vars: []
+
+notes: |
+  context/03_live_pipeline.md is auto-generated — never hand-edit it.
+  The context/ folder load order is: 01_ → 02_ → 03_ (alphabetical sort).
+  To add new business rules, create a new numbered .md file in context/.

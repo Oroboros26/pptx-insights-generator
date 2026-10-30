@@ -1,0 +1,40 @@
+module: config.py
+description: All shared constants used across every module in the pipeline.
+
+purpose: |
+  Single source of truth for values that multiple modules need.
+  Changing a constant here (e.g. MODEL, SAMPLE_RATE, SLIDE_PROMPT)
+  automatically applies everywhere — no hunting across files.
+
+exports:
+  - name: MODEL
+    type: str
+    description: Azure OpenAI model name used for every GPT call.
+
+  - name: SAMPLE_RATE
+    type: float
+    description: Fraction of L2-passing slides sent to the L3 AI judge (0.20 = 20%).
+
+  - name: SLIDE_PROMPT
+    type: str
+    description: |
+      The per-slide instruction sent to GPT. Defines the emoji-delimited output
+      format (📍 📊 ▲ ▼ ⚠️ 🎯) that parsers in utils.py rely on.
+      Changing this without updating utils.py silently breaks PDF and email output.
+
+  - name: ABBREVIATIONS
+    type: set[str]
+    description: Known retail abbreviations. Level 2 checks at least one appears in each insight.
+
+  - name: HALLUCINATION_SIGNALS
+    type: list[str]
+    description: Hedge words flagged by Level 2 as signs the model invented data.
+
+dependencies:
+  internal: []
+  external: []
+  env_vars: []
+
+notes: |
+  No logic lives here — only data. If you add a new constant used by multiple
+  modules, put it here rather than in the module that first needs it.

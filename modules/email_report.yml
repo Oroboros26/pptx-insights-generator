@@ -1,0 +1,56 @@
+module: email_report.py
+description: Builds the HTML email body and sends the report via SendGrid or SMTP.
+
+purpose: |
+  Sends a short teaser email with the executive summary as bullet points.
+  The full detail is in the PDF and PPTX attachments. The email backend
+  (SendGrid or SMTP) is selected at runtime via the EMAIL_PROVIDER env var
+  so no code change is needed to switch between them.
+
+exports:
+  - name: send_report_email(pdf_path, pptx_path, executive_summary, slide_results, filename)
+    description: |
+      Main entry point. Reads EMAIL_PROVIDER and dispatches to send_email_sendgrid
+      or send_email_smtp. Skips silently if REPORT_EMAIL_TO is not set.
+
+  - name: send_email_sendgrid(pdf_path, pptx_path, subject, html_body, to_email)
+    description: Sends via the SendGrid API. Attaches both PDF and PPTX.
+
+  - name: send_email_smtp(pdf_path, pptx_path, subject, html_body, to_email)
+    description: Sends via SMTP with STARTTLS (defaults to Office 365 on port 587).
+
+  - name: _email_html(executive_summary, slide_results, pdf_attach_name, pptx_attach_name)
+    description: |
+      Builds the HTML email body. Extracts highlights from the exec summary
+      and renders them as emoji-prefixed bullet rows in a plain table layout.
+
+  - name: _pdf_attach_name(pptx_filename)
+    description: |
+      Derives the PDF filename from the PPTX filename.
+      Splits on hyphen or space to get the week prefix (e.g. W20), then
+      appends "Retail Weekly Insight.pdf".
+
+dependencies:
+  internal:
+    - utils.py  (_abbrev_numbers, _parse_exec_summary)
+  external:
+    - sendgrid  (only when EMAIL_PROVIDER=sendgrid)
+    - smtplib   (stdlib — only when EMAIL_PROVIDER=smtp)
+    - os        (stdlib)
+    - re        (stdlib)
+    - datetime  (stdlib)
+  env_vars:
+    - REPORT_EMAIL_TO: recipient address (required — skips if not set)
+    - EMAIL_PROVIDER: "sendgrid" (default) or "smtp"
+    - SENDGRID_API_KEY: required when EMAIL_PROVIDER=sendgrid
+    - REPORT_EMAIL_FROM: sender address (default noreply@example.com)
+    - REPORT_EMAIL_REPLY_TO: optional reply-to address
+    - SMTP_HOST: SMTP server (default smtp.office365.com)
+    - SMTP_PORT: SMTP port (default 587)
+    - SMTP_USER: SMTP login username
+    - SMTP_PASSWORD: SMTP login password
+
+notes: |
+  The email body intentionally omits per-slide detail — that lives in the PDF.
+  If no highlights are parsed from the exec summary, the email falls back to
+  splitting the Overall paragraph into individual sentences as bullet points.

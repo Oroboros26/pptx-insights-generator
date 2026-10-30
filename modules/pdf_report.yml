@@ -1,0 +1,47 @@
+module: pdf_report.py
+description: Generates the branded A4 PDF report using fpdf2 primitives.
+
+purpose: |
+  Renders the full branded report as a PDF: header, executive summary with
+  a two-column highlights/risks card and watch callout, then one insight card
+  per business slide. Uses bundled Inter fonts from assets/fonts/ (falls back
+  to system DejaVu Sans). All drawing is done with fpdf2 primitives — no HTML
+  engine — so the pipeline stays pure-Python with no extra dependencies.
+
+exports:
+  - name: generate_pdf_report(slide_results, filename, output_path, executive_summary)
+    input:
+      - slide_results: list of dicts from process_pptx (slide_num, insight, etc.)
+      - filename: original PPTX filename (used in the header)
+      - output_path: where to write the PDF file
+      - executive_summary: string from generate_executive_summary (optional)
+    output: PDF file written to output_path
+    description: |
+      Renders a multi-page A4 PDF with a neutral black and white theme.
+      Skips slides with no business data and notes how many were omitted.
+
+internal_helpers:
+  - _register_fonts       — loads Inter OTF files or falls back to DejaVu Sans
+  - _ensure_space         — inserts a page break before a block that would overflow
+  - _dot_bullet           — draws a circular badge + wrapped text
+  - _two_column_block     — renders two equal-height surface-1 cards side by side
+  - _exec_overall         — paragraph with a left accent bar
+  - _watch_box            — full-width grey callout with bold Watch label
+  - _slide_block          — one slide's pill + situation + bullet list
+  - _section_label        — uppercase section heading with optional hairline rule
+
+dependencies:
+  internal:
+    - utils.py  (_clean, _abbrev_numbers, _parse_exec_summary, _parse_slide_insight)
+  external:
+    - fpdf2     (FPDF — imported inside generate_pdf_report to keep import lightweight)
+    - Pillow    (PIL Image — used to read logo dimensions for the footer)
+    - os        (stdlib)
+    - datetime  (stdlib)
+  env_vars: []
+
+notes: |
+  Inter fonts must be present in assets/fonts/ (Inter-Regular.otf, Inter-Bold.otf,
+  Inter-Medium.otf, Inter-SemiBold.otf). The Dockerfile copies this folder into
+  the image. If fonts are missing, DejaVu Sans is used as a fallback.
+  An optional logo.png in assets/ is shown in the footer if present.

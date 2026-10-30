@@ -1,0 +1,43 @@
+module: evaluation.py
+description: Two-gate quality system — rule-based Level 2 and AI-as-judge Level 3.
+
+purpose: |
+  Catches bad AI outputs before they reach the final PPTX, PDF, and email.
+  L2 is fast and free (runs on every slide). L3 costs an API call so it only
+  fires on L2 failures and a random 20% sample of passes. Neither gate blocks
+  output — they flag issues printed in the quality report at the end of each run.
+
+exports:
+  - name: validate_insight(insight)
+    input: raw insight string from the model
+    output: list of flag strings (empty = pass)
+    description: |
+      Level 2 rule-based checks:
+        - Required sections present (Watch, Action)
+        - Bullets within 12-word limit
+        - No hallucination hedge words
+        - At least one known abbreviation used
+
+  - name: judge_insight(client, b64_image, insight, slide_num)
+    input: AzureOpenAI client, base64 image, insight text, slide number
+    output: dict with keys accuracy, format, tone (int 1-5) and flags (list)
+    description: |
+      Level 3 AI-as-judge. Sends the slide image + insight to GPT and asks it
+      to score accuracy, format, and tone 1–5. Returns scores as a parsed dict.
+
+  - name: print_quality_report(slide_results, sample_rate)
+    input: list of slide result dicts, SAMPLE_RATE float
+    output: none (prints to stdout)
+    description: Prints a summary table of L2/L3 pass rates and any flagged slides.
+
+dependencies:
+  internal:
+    - config.py  (MODEL, ABBREVIATIONS, HALLUCINATION_SIGNALS)
+  external:
+    - json       (stdlib)
+  env_vars: []
+
+notes: |
+  A slide is considered "flagged" if L2 failed OR any L3 dimension scored below 3.
+  Flagged slides are listed at the end of the quality report for human review.
+  The L3 judge uses temperature=0.0 for deterministic, consistent scoring.

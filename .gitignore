@@ -1,0 +1,28 @@
+# Secrets: never commit
+.env
+
+# Input and output decks and reports may hold confidential data
+input/*
+output/*
+!input/.gitkeep
+!output/.gitkeep
+*.pptx
+*.pdf
+
+# Private reporting context: keep your real rules and figures out of git
+context/*
+!context/01_writing_rules.md
+!context/02_style_examples.md
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+env/
+venv/
+
+# Optional assets you add yourself
+assets/logo.png
+assets/fonts/*.otf
+assets/fonts/*.ttf
